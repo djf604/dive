@@ -22,7 +22,7 @@ def main():
     parser.add_argument('-c', '--config', help='Path to configuration JSON file.')
     parser.add_argument('-x', '--extra', action='append', help='Extra info designated for a specific pipeline. '
                                                                + 'Specify multiple times for multiple values. Format: \"{key}:{value}\"')
-    parser.add_argument('-h', '--help', help='Print this help message, and optionally print help for given pipeline module.')
+    # parser.add_argument('-h', '--help', help='Print this help message, and optionally print help for given pipeline module.')
     parser.add_argument('pipeline_module', help='Python module to pipeline logic.')
 
     if len(sys.argv) == 1:
