@@ -34,7 +34,7 @@ def main():
     output_dir = user_args.output_dir
     lib_prefix = user_args.lib_prefix
     step = user_args.step
-    extra = user_args.extra
+    extra = user_args.extra if user_args.extra else []
     pipeline_module = user_args.pipeline_module
 
     # Print help if asked for
