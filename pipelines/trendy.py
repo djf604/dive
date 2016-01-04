@@ -3,7 +3,22 @@ import os
 from dive.components import Software, Parameter, Redirect
 
 
-def run_pipeline(reads, output_dir, lib_prefix, step, config, run_is_paired_end):
+def run_pipeline(reads, options):
+    # Instantiate options
+    output_dir = options['output_dir']
+    logs_dir = options['logs_dir']
+    lib_prefix = options['lib_prefix']
+    step = options['step']
+    config = options['config']
+    run_is_paired_end = options['run_is_paired_end']
+
+    try:
+        forward_adapter = options['extra_info']['forward_adapter']
+        reverse_adapter = options['extra_info']['reverse_adapter']
+    except KeyError, e:
+        # TODO Make better exception message
+        raise KeyError('Some needed extra_info not given.')
+
     # Establish Software instances
     cat = Software('cat', '/bin/cat')
     cutadapt = Software('cutadapt', config['cutadapt']['path'])
