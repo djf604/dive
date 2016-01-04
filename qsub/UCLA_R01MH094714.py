@@ -20,8 +20,8 @@ for ucla_pair in ucla_files:
 
     ucla_args = []
     ucla_args.append('READS="{}"'.format(','.join([read1, read2])))
-    ucla_args.append('OUTDIR="{}"'.format(ucla_out))
-    ucla_args.append('LIBNAME="{}"'.format(ucla_pair_out))
+    ucla_args.append('OUTDIR="{}"'.format(ucla_pair_out))
+    ucla_args.append('LIBNAME="{}"'.format(ucla_pair))
     ucla_args.append('FORWARD_ADAPTER=""')
     ucla_args.append('REVERSE_ADAPTER=""')
     ucla_args.append('SAILFISH_LIBTYPE="{}"'.format('ISF'))
