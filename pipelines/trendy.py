@@ -32,7 +32,7 @@ def run_pipeline(reads, options):
             # Aggregate read1s and read2s
             read1s, read2s = [], []
             for read in reads:
-                read1, read2 = read.split(',')
+                read1, read2 = read.split(':')
                 read1s.append(read1)
                 read2s.append(read2)
 
@@ -64,7 +64,7 @@ def run_pipeline(reads, options):
         reads = reads[0]
         if run_is_paired_end:
             # Get paired-end reads, construct new filenames
-            read1, read2 = reads.split(',')
+            read1, read2 = reads.split(':')
             trimmed_read1_filename = os.path.join(output_dir, lib_prefix + '_read1.trimmed.fastq.gz')
             trimmed_read2_filename = os.path.join(output_dir, lib_prefix + '_read2.trimmed.fastq.gz')
 
@@ -106,7 +106,7 @@ def run_pipeline(reads, options):
     # Run Kallisto
     if step <= 3:
         if run_is_paired_end:
-            read1, read2 = reads.split(',')
+            read1, read2 = reads.split(':')
             kallisto.run(
                 Parameter('--index={}'.format(config['kallisto']['index-path'])),
                 Parameter('--output-dir={}'.format(lib_prefix + '_kallisto_quant')),
@@ -123,7 +123,7 @@ def run_pipeline(reads, options):
     # Run Sailfish
     if step <= 4:
         if run_is_paired_end:
-            read1, read2 = reads.split(',')
+            read1, read2 = reads.split(':')
             sailfish.run(
                 Parameter('--index', config['sailfish']['index-path']),
                 Parameter('--libType', '\"{}\"'.format(sailfish_libtype)),

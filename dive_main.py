@@ -15,7 +15,7 @@ from dive.components import Software, Parameter, Redirect
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='RNAseq Unified Analysis Pipeline: Chicago Flavor')
-    parser.add_argument('-r', '--read', action='append', help='File paths to raw data. Separate with comma for paired-end.')
+    parser.add_argument('-r', '--read', action='append', help='File paths to raw data. Separate with colon for paired-end.')
     parser.add_argument('-o', '--output-dir', dest='output_dir', default='.', help='Destination for processed files.')
     parser.add_argument('-l', '--lib-prefix', dest='lib_prefix', help='Library prefix name.')
     parser.add_argument('-s', '--step', type=int, default=0, help='Start step in the pipeline. Defaults to 0 for beginning.')
@@ -47,7 +47,7 @@ def main():
 
     # Determine type of reads by user input
     run_is_paired_end = False
-    if len(reads[0].split(',')) == 2:
+    if len(reads[0].split(':')) == 2:
         run_is_paired_end = True
 
     # Make sure there's a trailing slash on output dir
@@ -94,5 +94,8 @@ def main():
         print(' '.join(['>', time.strftime('%d %b %Y %H:%M:%S'), 'Pipeline ran successfully']))
     except Exception, e:
         print e
+
+    # Remove temporary files and directory
+    subprocess.call(['rm', '-rf', tmp_dir])
 
 main()

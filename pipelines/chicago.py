@@ -35,7 +35,7 @@ def run_pipeline(reads, options):
         for i, read in enumerate(reads):
             if run_is_paired_end:
                 # Get paired-end reads, construct new filenames
-                read1, read2 = read.split(',')
+                read1, read2 = read.split(':')
                 trimmed_read1_filename = os.path.join(output_dir,
                                                       lib_prefix + '_{}_read1.trimmed.fastq.gz'.format(i))
                 trimmed_read2_filename = os.path.join(output_dir,
@@ -80,7 +80,7 @@ def run_pipeline(reads, options):
     if step <= 2:
         for i, read in enumerate(reads):
             if run_is_paired_end:
-                read1, read2 = read.split(',')
+                read1, read2 = read.split(':')
                 star.run(
                     Parameter('--runMode', 'alignReads'),
                     Parameter('--twopassMode', 'Basic'),
