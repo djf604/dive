@@ -15,6 +15,7 @@ def run_pipeline(reads, options):
     try:
         forward_adapter = options['extra_info']['forward_adapter']
         reverse_adapter = options['extra_info']['reverse_adapter']
+        sailfish_libtype = options['extra_info']['sailfish_libtype']
     except KeyError, e:
         # TODO Make better exception message
         raise KeyError('Some needed extra_info not given.')
@@ -60,6 +61,7 @@ def run_pipeline(reads, options):
 
     # Trim adapters with cutadapt
     if step <= 2:
+        reads = reads[0]
         if run_is_paired_end:
             # Get paired-end reads, construct new filenames
             read1, read2 = reads.split(',')
@@ -72,8 +74,8 @@ def run_pipeline(reads, options):
                 Parameter('--minimum-length=5'),
                 Parameter('--output={}'.format(trimmed_read1_filename)),
                 Parameter('--paired-output={}'.format(trimmed_read2_filename)),
-                Parameter('-a', 'CTGTCTCTTATACACATCT'),
-                Parameter('-A', 'CTGTCTCTTATACACATCT'),
+                Parameter('-a', forward_adapter),
+                Parameter('-A', reverse_adapter),
                 Parameter('-q', '30'),
                 Parameter(read1),
                 Parameter(read2),
@@ -92,7 +94,7 @@ def run_pipeline(reads, options):
                 Parameter('--quality-base={}'.format(config['cutadapt']['quality-base'])),
                 Parameter('--minimum-length=5'),
                 Parameter('--output={}'.format(trimmed_read_filename)),
-                Parameter('-a', 'CTGTCTCTTATACACATCT'),
+                Parameter('-a', forward_adapter),
                 Parameter('-q', '30'),
                 Parameter(reads[0]),
                 Redirect(type='1>', dest=os.path.join(output_dir, 'logs', 'cutadapt.summary'))
@@ -124,7 +126,7 @@ def run_pipeline(reads, options):
             read1, read2 = reads.split(',')
             sailfish.run(
                 Parameter('--index', config['sailfish']['index-path']),
-                Parameter('--libType', '\"{}\"'.format(config['sailfish']['lib-type'])),
+                Parameter('--libType', '\"{}\"'.format(sailfish_libtype)),
                 Parameter('-1', '<(zcat {})'.format(read1)),
                 Parameter('-2', '<(zcat {})'.format(read2)),
                 Parameter('--output', lib_prefix + '_sailfish_quant')
@@ -132,7 +134,7 @@ def run_pipeline(reads, options):
         else:
             sailfish.run(
                 Parameter('--index', config['sailfish']['index-path']),
-                Parameter('--libType', '\"{}\"'.format(config['sailfish']['lib-type'])),
+                Parameter('--libType', '\"{}\"'.format(sailfish_libtype)),
                 Parameter('-r', '<(zcat {})'.format(reads[0])),
                 Parameter('--output', lib_prefix + '_sailfish_quant')
             )
