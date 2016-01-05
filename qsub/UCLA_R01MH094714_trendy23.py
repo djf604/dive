@@ -19,7 +19,7 @@ for ucla_pair in ucla_files:
     # subprocess.call(['mkdir', '-p', ucla_pair_out])
 
     ucla_args = []
-    ucla_args.append('READS="{}"'.format(','.join([read1, read2])))
+    ucla_args.append('READS="{}"'.format(':'.join([read1, read2])))
     ucla_args.append('OUTDIR="{}"'.format(ucla_pair_out))
     ucla_args.append('LIBNAME="{}"'.format(ucla_pair))
     ucla_args.append('FORWARD_ADAPTER=""')

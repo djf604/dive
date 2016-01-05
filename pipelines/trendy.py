@@ -83,7 +83,7 @@ def run_pipeline(reads, options):
             )
 
             # Update reads list
-            reads = ','.join([trimmed_read1_filename, trimmed_read2_filename])
+            reads = ':'.join([trimmed_read1_filename, trimmed_read2_filename])
 
         else:
             # Construct new filename
