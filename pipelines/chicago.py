@@ -1,5 +1,6 @@
 __author__ = 'Dominic Fitzgerald'
 import os
+import subprocess
 from dive.components import Software, Parameter, Redirect
 
 
@@ -15,6 +16,7 @@ def run_pipeline(reads, options):
     try:
         run_is_stranded = True if options['extra_info']['run_is_stranded'].lower() == 'true' else False
         cufflinks_lib_type = options['extra_info']['cufflinks_lib_type']
+        htseq_stranded = options['extra_info']['htseq_stranded']  # yes|no|reverse
         forward_adapter = options['extra_info']['forward_adapter']
         reverse_adapter = options['extra_info']['reverse_adapter']
     except KeyError, e:
@@ -29,6 +31,21 @@ def run_pipeline(reads, options):
     samtools_flagstat = Software('Samtools Flagstat', config['samtools_flagstat']['path'])
     cufflinks = Software('Cufflinks', config['cufflinks']['path'])
     htseq = Software('HTSeq', config['htseq']['path'])
+
+    # Housekeeping
+    star_output = []
+    novosort_outfile = ''
+    if htseq_stranded not in ['yes', 'no', 'reverse']:
+        raise ValueError('htseq_stranded is not yes|no|reverse')
+    if cufflinks_lib_type not in ['ff-firststrand',
+                                  'ff-secondstrand',
+                                  'ff-unstranded',
+                                  'fr-firststrand',
+                                  'fr-secondstrand',
+                                  'fr-unstranded',
+                                  'transfrags']:
+        raise ValueError('cufflinks_lib_type is not ff-firststrand|ff-secondstrand|ff-unstranded|' +
+                         'fr-firststrand|fr-secondstrand|fr-unstranded|transfrags')
 
     # Step 1: Trimming | Cutadapt
     if step <= 1:
@@ -47,8 +64,8 @@ def run_pipeline(reads, options):
                     Parameter('--minimum-length=5'),
                     Parameter('--output={}'.format(trimmed_read1_filename)),
                     Parameter('--paired-output={}'.format(trimmed_read2_filename)),
-                    Parameter('-a', forward_adapter) if forward_adapter else Parameter(),
-                    Parameter('-A', reverse_adapter) if reverse_adapter else Parameter(),
+                    Parameter('-a', forward_adapter if forward_adapter else 'ZZZ'),
+                    Parameter('-A', reverse_adapter if reverse_adapter else 'ZZZ'),
                     Parameter('-q', '30'),
                     Parameter(read1),
                     Parameter(read2),
@@ -56,7 +73,7 @@ def run_pipeline(reads, options):
                 )
 
                 # Update reads list
-                reads[i] = ','.join([trimmed_read1_filename, trimmed_read2_filename])
+                reads[i] = ':'.join([trimmed_read1_filename, trimmed_read2_filename])
             else:
                 # Construct new filename
                 trimmed_read_filename = os.path.join(output_dir,
@@ -67,7 +84,7 @@ def run_pipeline(reads, options):
                     Parameter('--quality-base={}'.format(config['cutadapt']['quality-base'])),
                     Parameter('--minimum-length=5'),
                     Parameter('--output={}'.format(trimmed_read_filename)),
-                    Parameter('-a', forward_adapter) if forward_adapter else Parameter(),
+                    Parameter('-a', forward_adapter if forward_adapter else 'ZZZ'),
                     Parameter('-q', '30'),
                     Parameter(read),
                     Redirect(type='1>', dest=os.path.join(logs_dir, 'cutadapt.summary'))
@@ -76,15 +93,17 @@ def run_pipeline(reads, options):
                 # Update reads list
                 reads[i] = trimmed_read_filename
 
-    # Step 2: Alignment | STAR 2-pass
+    # Step 2: Alignment | STAR 2-pass, Alignment Stats | samtools flagstat
     if step <= 2:
         for i, read in enumerate(reads):
             if run_is_paired_end:
                 read1, read2 = read.split(':')
+                star_outfile_prefix = os.path.join(output_dir,
+                                                   lib_prefix + ('_' if lib_prefix[-1] != '.' else '') + '{}.')
                 star.run(
                     Parameter('--runMode', 'alignReads'),
                     Parameter('--twopassMode', 'Basic'),
-                    Parameter('--outFileNamePrefix', lib_prefix if lib_prefix[-1] == '.' else lib_prefix + '.'),
+                    Parameter('--outFileNamePrefix', star_outfile_prefix.format(i)),
                     Parameter('--runThreadN', '8'),
                     Parameter('--genomeDir', config['STAR']['genome-dir']),
                     Parameter('--readFilesIn', read1, read2),
@@ -99,14 +118,62 @@ def run_pipeline(reads, options):
                     Parameter('--alignIntronMin', '20'),
                     Parameter('--alignIntronMax', '1000000'),
                     Parameter('--alignMatesGapMax', '1000000'),
-                    Parameter('--outFilterIntronMotifs', 'RemoveNoncanonical') if run_is_stranded else Parameter()
+                    (
+                        Parameter('--outFilterIntronMotifs', 'RemoveNoncanonical') if run_is_stranded
+                        else Parameter('--outSAMstrandField', 'intronMotif')
+                    )
                 )
+
+                samtools_flagstat.run(
+                    Parameter(star_outfile_prefix + 'Aligned.out.bam'),
+                    Redirect(type='>', dest=os.path.join(logs_dir, lib_prefix + '_{}.stat'))
+                )
+
+                star_output.append(star_outfile_prefix + 'Aligned.out.bam')
             else:
                 # TODO Implement single-end STAR
                 pass
 
-    # Step 3a: Quantification | Cufflinks
+    # Step 3: BAM Merge | Novosort
     if step <= 3:
-        pass
+        novosort_outfile = os.path.join(output_dir,
+                                        lib_prefix + ('.' if lib_prefix[-1] != '.' else '') +
+                                        'merged.Aligned.out.bam')
+        novosort.run(
+            Parameter('--tmpdir', os.path.join(output_dir, 'tmp')),
+            Parameter(*[bam for bam in star_output]),
+            Redirect(type='>', dest=novosort_outfile)
+        )
 
-    # Step 3b: Quantification | HTSeq
+    # Step 4a: Quantification | Cufflinks
+    if step <= 4:
+        cufflinks_output_dir = os.path.join(output_dir, 'cufflinks')
+        subprocess.call(['mkdir', '-p', cufflinks_output_dir])
+        cufflinks.run(
+            Parameter('--GTF', config['cufflinks']['transcriptome-gtf']),
+            Parameter('-p', config['cufflinks']['threads']),
+            Parameter('--library-type', cufflinks_lib_type),
+            Parameter('--upper-quartile-norm'),
+            Parameter('-o', cufflinks_output_dir),
+            Parameter('--max-bundle-frags', '1000000000'),
+            Parameter(novosort_outfile)
+        )
+
+    # Step 4b: Quantification | HTSeq
+    if step <= 5:
+        htseq_output_dir = os.path.join(output_dir, 'htseq')
+        subprocess.call(['mkdir', '-p', htseq_output_dir])
+        for id_attr in ['gene_id', 'gene_name']:
+            for feature_type in ['gene', 'transcript', 'exon']:
+                htseq.run(
+                    Parameter('-f', 'bam'),
+                    Parameter('-r', 'name'),
+                    Parameter('-s', htseq_stranded),
+                    Parameter('-t', feature_type),
+                    Parameter('-i', id_attr),
+                    Parameter(novosort_outfile),
+                    Parameter(config['htseq']['transcriptome-gtf']),
+                    Redirect(type='>', dest=os.path.join(htseq_output_dir,
+                                                         '{}.{}.counts'.format(feature_type,
+                                                                               id_attr)))
+                )

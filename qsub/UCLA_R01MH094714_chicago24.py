@@ -5,7 +5,7 @@ import re
 
 ucla_dir = '/lustre/beagle2/djf604/synapse/UCLA_R01MH094714/RAW'
 ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714'
-ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/trendy-23.pbs'
+ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/chicago-24.pbs'
 
 ucla_files = os.listdir(ucla_dir)
 
@@ -27,7 +27,9 @@ for ucla_pair in ucla_files:
     ucla_args.append('LIBNAME="{}"'.format(ucla_pair))
     ucla_args.append('FORWARD_ADAPTER=""')
     ucla_args.append('REVERSE_ADAPTER=""')
-    ucla_args.append('SAILFISH_LIBTYPE="{}"'.format('ISF'))
+    ucla_args.append('RUN_IS_STRANDED="true"')
+    ucla_args.append('CUFFLINKS_LIB_TYPE="fr-firststrand"')
+    ucla_args.append('HTSEQ_STRANDED="yes"')
 
     # subprocess.call(['qsub', '-v', ','.join(ucla_args), ucla_pbs])
     print ' '.join(['qsub', '-v', ','.join(ucla_args), ucla_pbs])
