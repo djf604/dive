@@ -16,7 +16,9 @@ for ucla_pair in ucla_files:
         read1, read2 = read2, read1
 
     ucla_pair_out = os.path.join(ucla_out, ucla_pair)
+    ucla_pbs_logs = os.path.join(ucla_pair_out, 'logs')
     # subprocess.call(['mkdir', '-p', ucla_pair_out])
+    subprocess.call(['mkdir', '-p', ucla_pbs_logs])
 
     ucla_args = []
     ucla_args.append('READS="{}"'.format(':'.join([
@@ -31,6 +33,7 @@ for ucla_pair in ucla_files:
     ucla_args.append('CUFFLINKS_LIB_TYPE="fr-firststrand"')
     ucla_args.append('HTSEQ_STRANDED="yes"')
 
+    os.chdir(ucla_pbs_logs)
     # subprocess.call(['qsub', '-v', ','.join(ucla_args), ucla_pbs])
     print ' '.join(['qsub', '-v', ','.join(ucla_args), ucla_pbs])
 
