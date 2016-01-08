@@ -93,7 +93,7 @@ def main():
         pipeline.run_pipeline(reads, options)
         print(' '.join(['>', time.strftime('%d %b %Y %H:%M:%S'), 'Pipeline ran successfully']))
     except Exception, e:
-        print e
+        print str(e)
 
     # Remove temporary files and directory
     subprocess.call(['rm', '-rf', tmp_dir])
