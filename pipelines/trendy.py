@@ -79,7 +79,7 @@ def run_pipeline(reads, options):
                 Parameter('-q', '30'),
                 Parameter(read1),
                 Parameter(read2),
-                Redirect(type='1>', dest=os.path.join(output_dir, 'logs', 'cutadapt.summary'))
+                Redirect(type='1>', dest=os.path.join(output_dir, 'logs', 'cutadapt.trendy.summary'))
             )
 
             # Update reads list
@@ -97,7 +97,7 @@ def run_pipeline(reads, options):
                 Parameter('-a', forward_adapter if forward_adapter else 'ZZZ'),
                 Parameter('-q', '30'),
                 Parameter(reads[0]),
-                Redirect(type='1>', dest=os.path.join(output_dir, 'logs', 'cutadapt.summary'))
+                Redirect(type='1>', dest=os.path.join(output_dir, 'logs', 'cutadapt.trendy.summary'))
             )
 
             # Update reads list
