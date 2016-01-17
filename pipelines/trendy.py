@@ -14,7 +14,7 @@ def run_pipeline(reads, options):
     run_is_paired_end = options['run_is_paired_end']
 
     # Keep list of items to delete
-    staging_delete = []
+    staging_delete = ['tmp']
 
     try:
         forward_adapter = options['extra_info']['forward_adapter']
