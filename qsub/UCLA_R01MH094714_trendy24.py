@@ -19,7 +19,6 @@ except:
 ucla_dir = '/lustre/beagle2/djf604/synapse/UCLA_R01MH094714/RAW'
 ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714/trendy24'
 ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/trendy-24.pbs'
-pbs_log_dir = ''
 
 # Make output directory if it doesn't exist
 subprocess.call(['mkdir', '-p', ucla_out])
@@ -40,9 +39,9 @@ for i, ucla_pair in enumerate(ucla_files):
     if re.search(r'\.R1\.', read2) is not None:
         read1, read2 = read2, read1
 
-    # Create output directory for sample
+    # Create output directory for sample, and logs directory
     ucla_pair_out = os.path.join(ucla_out, ucla_pair)
-    subprocess.call(['mkdir', '-p', ucla_pair_out])
+    subprocess.call(['mkdir', '-p', ucla_pair_out, 'logs'])
 
     # Setup qsub arguments
     ucla_args = []
