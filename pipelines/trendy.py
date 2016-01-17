@@ -1,5 +1,6 @@
 __author__ = 'Dominic Fitzgerald'
 import os
+import subprocess
 from dive.components import Software, Parameter, Redirect
 
 
@@ -11,6 +12,9 @@ def run_pipeline(reads, options):
     step = options['step']
     config = options['config']
     run_is_paired_end = options['run_is_paired_end']
+
+    # Keep list of items to delete
+    staging_delete = []
 
     try:
         forward_adapter = options['extra_info']['forward_adapter']
@@ -68,6 +72,9 @@ def run_pipeline(reads, options):
             trimmed_read1_filename = os.path.join(output_dir, lib_prefix + '_read1.trimmed.fastq.gz')
             trimmed_read2_filename = os.path.join(output_dir, lib_prefix + '_read2.trimmed.fastq.gz')
 
+            staging_delete.append(trimmed_read1_filename)
+            staging_delete.append(trimmed_read2_filename)
+
             # Run cutadapt
             cutadapt.run(
                 Parameter('--quality-base={}'.format(config['cutadapt']['quality-base'])),
@@ -88,6 +95,8 @@ def run_pipeline(reads, options):
         else:
             # Construct new filename
             trimmed_read_filename = os.path.join(output_dir, lib_prefix + '.trimmed.fastq.gz')
+
+            staging_delete.append(trimmed_read_filename)
 
             # Run cutadapt
             cutadapt.run(
@@ -138,3 +147,7 @@ def run_pipeline(reads, options):
                 Parameter('-r', '<(zcat {})'.format(reads[0])),
                 Parameter('--output', lib_prefix + '_sailfish_quant')
             )
+
+        # Delete staged items
+        for item in staging_delete:
+            subprocess.call(['rm', item])
