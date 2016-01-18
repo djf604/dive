@@ -42,6 +42,8 @@ for i, ucla_pair in enumerate(ucla_files):
     # Create output directory for sample, and logs directory
     ucla_pair_out = os.path.join(ucla_out, ucla_pair)
     subprocess.call(['mkdir', '-p', os.path.join(ucla_pair_out, 'logs')])
+    subprocess.call(['cat', '{} of {}'.format(i + 1, len(ucla_files)),
+                     '>', 'order.log'])
 
     # Setup qsub arguments
     ucla_args = []
