@@ -118,14 +118,14 @@ def run_pipeline(reads, options):
             read1, read2 = reads.split(':')
             kallisto.run(
                 Parameter('--index={}'.format(config['kallisto']['index-path'])),
-                Parameter('--output-dir={}'.format(lib_prefix + '_kallisto_quant')),
+                Parameter('--output-dir={}'.format('kallisto_quant')),
                 Parameter(read1),
                 Parameter(read2)
             )
         else:
             kallisto.run(
                 Parameter('--index={}'.format(config['kallisto']['index-path'])),
-                Parameter('--output-dir={}'.format(lib_prefix + '_kallisto_quant')),
+                Parameter('--output-dir={}'.format('kallisto_quant')),
                 Parameter(reads[0])
             )
 
@@ -138,14 +138,14 @@ def run_pipeline(reads, options):
                 Parameter('--libType', '\"{}\"'.format(sailfish_libtype)),
                 Parameter('-1', '<(zcat {})'.format(read1)),
                 Parameter('-2', '<(zcat {})'.format(read2)),
-                Parameter('--output', lib_prefix + '_sailfish_quant')
+                Parameter('--output', 'sailfish_quant')
             )
         else:
             sailfish.run(
                 Parameter('--index', config['sailfish']['index-path']),
                 Parameter('--libType', '\"{}\"'.format(sailfish_libtype)),
                 Parameter('-r', '<(zcat {})'.format(reads[0])),
-                Parameter('--output', lib_prefix + '_sailfish_quant')
+                Parameter('--output', 'sailfish_quant')
             )
 
         # Delete staged items
