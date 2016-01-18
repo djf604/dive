@@ -57,8 +57,8 @@ for i, ucla_pair in enumerate(ucla_files):
 
     # Change to logs directory so qsub output will go here
     os.chdir(os.path.join(ucla_pair_out, 'logs'))
-    subprocess.call(['echo', '"{} of {}"'.format(i + 1, len(ucla_files)),
-                     '>', 'order.log'])
+    subprocess.call(['echo', '"{} of {}"'.format(i + 1, len(ucla_files))],
+                    stdout=open('order.log', 'w'))
 
     subprocess.call(['qsub', '-v', ','.join(ucla_args), ucla_pbs])
     print 'Submitted job {} of {}'.format(i + 1, len(ucla_files))
