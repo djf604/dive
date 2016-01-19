@@ -17,8 +17,8 @@ except:
 
 # Set up paths
 ucla_dir = '/lustre/beagle2/djf604/synapse/UCLA_R01MH094714/RAW'
-ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714/chicago24'
-ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/chicago-24.pbs'
+ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714/trendy19'
+ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/trendy-19.pbs'
 
 # Make output directory if it doesn't exist
 subprocess.call(['mkdir', '-p', ucla_out])
@@ -43,7 +43,7 @@ for i, ucla_pair in enumerate(ucla_files):
     ucla_pair_out = os.path.join(ucla_out, ucla_pair)
     subprocess.call(['mkdir', '-p', os.path.join(ucla_pair_out, 'logs')])
 
-    # Set up qsub arguments
+    # Setup qsub arguments
     ucla_args = []
     ucla_args.append('READS="{}"'.format(':'.join([
         os.path.join(ucla_dir, ucla_pair, read1),
@@ -53,9 +53,7 @@ for i, ucla_pair in enumerate(ucla_files):
     ucla_args.append('LIBNAME="{}"'.format(ucla_pair))
     ucla_args.append('FORWARD_ADAPTER=""')
     ucla_args.append('REVERSE_ADAPTER=""')
-    ucla_args.append('RUN_IS_STRANDED="true"')
-    ucla_args.append('CUFFLINKS_LIB_TYPE="fr-firststrand"')
-    ucla_args.append('HTSEQ_STRANDED="yes"')
+    ucla_args.append('SAILFISH_LIBTYPE="{}"'.format('ISF'))
 
     # Change to logs directory so qsub output will go here
     os.chdir(os.path.join(ucla_pair_out, 'logs'))

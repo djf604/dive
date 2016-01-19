@@ -43,7 +43,7 @@ for i, ucla_pair in enumerate(ucla_files):
     ucla_pair_out = os.path.join(ucla_out, ucla_pair)
     subprocess.call(['mkdir', '-p', os.path.join(ucla_pair_out, 'logs')])
 
-    # Setup qsub arguments
+    # Set up qsub arguments
     ucla_args = []
     ucla_args.append('READS="{}"'.format(':'.join([
         os.path.join(ucla_dir, ucla_pair, read1),

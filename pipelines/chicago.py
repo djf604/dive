@@ -104,9 +104,9 @@ def run_pipeline(reads, options):
                     Parameter('--runMode', 'alignReads'),
                     Parameter('--twopassMode', 'Basic'),
                     Parameter('--outFileNamePrefix', star_outfile_prefix.format(i)),
-                    Parameter('--runThreadN', '8'),
+                    Parameter('--runThreadN', config['STAR']['threads']),
                     Parameter('--genomeDir', config['STAR']['genome-dir']),
-                    Parameter('--readFilesIn', read1, read2),
+                    Parameter('--readFilesIn', read1, read2),  # TODO Account for single-end
                     Parameter('--readFilesCommand', 'zcat'),
                     Parameter('--quantMode', 'TranscriptomeSAM', 'GeneCounts'),
                     Parameter('--outSAMtype', 'BAM', 'Unsorted'),
@@ -114,7 +114,7 @@ def run_pipeline(reads, options):
                     Parameter('--outFilterMultimapNmax', '20'),
                     Parameter('--alignSJoverhangMin', '8'),
                     Parameter('--alignSJDBoverhangMin', '1'),
-                    Parameter('--outFilterMismatchNmax', '8'),  # Should this be 2?
+                    Parameter('--outFilterMismatchNmax', '2'),
                     Parameter('--alignIntronMin', '20'),
                     Parameter('--alignIntronMax', '1000000'),
                     Parameter('--alignMatesGapMax', '1000000'),

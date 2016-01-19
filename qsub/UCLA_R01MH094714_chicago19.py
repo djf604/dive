@@ -17,8 +17,8 @@ except:
 
 # Set up paths
 ucla_dir = '/lustre/beagle2/djf604/synapse/UCLA_R01MH094714/RAW'
-ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714/chicago24'
-ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/chicago-24.pbs'
+ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714/chicago19'
+ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/chicago-19.pbs'
 
 # Make output directory if it doesn't exist
 subprocess.call(['mkdir', '-p', ucla_out])

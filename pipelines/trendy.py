@@ -45,16 +45,18 @@ def run_pipeline(reads, options):
             for name, reads_group in [('read1', read1s), ('read2', read2s)]:
                 combined_read_filename = os.path.join(output_dir, '{}.combined.{}.fastq.gz'.format(lib_prefix, name))
                 combined_reads.append(combined_read_filename)
+                staging_delete.append(combined_read_filename)
                 cat.run(
                     Parameter(*[read for read in reads_group]),
                     Redirect(type='1>', dest=combined_read_filename)
                 )
 
             # Update reads list
-            reads = [','.join(combined_reads)]
+            reads = [':'.join(combined_reads)]
         else:
             # Combine reads
             combined_read_filename = os.path.join(output_dir, '{}.combined.fastq.gz'.format(lib_prefix))
+            staging_delete.append(combined_read_filename)
             cat.run(
                 Parameter(*[read for read in reads]),
                 Redirect(type='1>', dest=combined_read_filename)
@@ -150,4 +152,4 @@ def run_pipeline(reads, options):
 
         # Delete staged items
         for item in staging_delete:
-            subprocess.call(['rm', item])
+            subprocess.call(['rm', '-rf', item])
