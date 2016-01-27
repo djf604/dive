@@ -230,3 +230,45 @@ def run_pipeline(reads, options):
                                            'Signal.{}.unstranded.bw'.format(i_mult)))
                 )
 
+    # Sort transcriptome BAM to ensure order of reads to make RSEM output deterministic
+    if step >= 4:
+        # Set BAM file paths, mv transcriptome BAM to temporary name
+        star_outfile_prefix = os.path.join(output_dir,
+                                           lib_prefix + ('.' if lib_prefix[-1] != '.' else ''))
+        transcriptome_bam = star_outfile_prefix + 'Aligned.toTranscriptome.out.bam'
+        tr_bam = star_outfile_prefix + 'Tr.bam'
+        staging_delete.append(tr_bam)
+        subprocess.call(['mv', transcriptome_bam, tr_bam])
+
+        # Template command
+        merge_cmd = 'cat <({input1}) <({input2}) | {compress} > {output}'
+        input1_cmd = '{samtools} view -H {bam}'
+        compress_cmd = 'samtools view -@ {threads} -bS -'
+
+        if run_is_paired_end:
+            input2_cmd = ('{samtools} view -@ {threads} {bam} | ' +
+                          'awk \'{{printf "%s", $0 ""; getline; print}}\' | ' +
+                          'sort -S {ram} -T {tmpdir} | ' +
+                          'tr \' \' \'\\n\'')
+        else:
+            input2_cmd = ('{samtools} view -@ {threads} {bam} | ' +
+                          'sort -S {ram} -T {tmpdir}')
+
+        subprocess.call(merge_cmd.format(
+            input1=input1_cmd.format(
+                samtools=config['samtools']['path'],
+                bam=tr_bam
+            ),
+            input2=input2_cmd.format(
+                samtools=config['samtools']['path'],
+                threads=config['RSEM']['threads'],
+                bam=tr_bam,
+                ram='32G',
+                tmpdir=os.path.join(output_dir, 'tmp')
+            ),
+            compress=compress_cmd.format(
+                threads=config['RSEM']['threads']
+            ),
+            output=transcriptome_bam
+        ), shell=True, executable='/bin/bash')
+

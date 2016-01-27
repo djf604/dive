@@ -126,10 +126,10 @@ def run_pipeline(reads, options):
 
                 samtools_flagstat.run(
                     Parameter(star_outfile_prefix + 'Aligned.out.bam'),
-                    Redirect(type='>', dest=os.path.join(logs_dir, lib_prefix + '_{}.stat'))
+                    Redirect(type='>', dest=os.path.join(logs_dir, lib_prefix + '_{}.stat'.format(i)))
                 )
 
-                star_output.append(star_outfile_prefix + 'Aligned.out.bam')
+                star_output.append(star_outfile_prefix.format(i) + 'Aligned.out.bam')
             else:
                 # TODO Implement single-end STAR
                 pass
