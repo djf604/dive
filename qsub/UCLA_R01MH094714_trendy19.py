@@ -17,7 +17,7 @@ except:
 
 # Set up paths
 ucla_dir = '/lustre/beagle2/djf604/synapse/UCLA_R01MH094714/RAW'
-ucla_out = '/lustre/beagle2/djf604/workspace/analysis/UCLA_R01MH094714/trendy19'
+ucla_out = '/lustre/beagle2/djf604/PsychENCODE/Unified/UCLA_R01MH094714/trendy19'
 ucla_pbs = '/lustre/beagle2/djf604/software/PEC/dive/pbs/trendy-19.pbs'
 
 # Make output directory if it doesn't exist
