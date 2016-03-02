@@ -266,6 +266,9 @@ def run_pipeline(read_pairs, options):
         meta_data['num_peaks'] = subprocess.check_output(['wc', '-l',
                                                           '{}.peaks.bed'.format(lib_prefix)])
 
+    for delete_file in staging_delete:
+        subprocess.call(['rm', delete_file])
+
 
 
 
