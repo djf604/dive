@@ -9,12 +9,15 @@ class Software:
         self.software_path = software_path
 
     def run(self, *args):
-        run_cmd = self.generate_cmd(*args)
+        run_cmd = self.__generate_cmd(*args)
         print(' '.join(['>', time.strftime('%d %b %Y %H:%M:%S'), 'Running', self.software_name]))
         print(run_cmd)
         subprocess.Popen(run_cmd, shell=True, executable='/bin/bash').wait()
 
-    def generate_cmd(self, *args):
+    def cmd(self, *args):
+        return self.__generate_cmd(*args)
+
+    def __generate_cmd(self, *args):
         return '{software_path} {parameters}'.format(
             software_path=self.software_path,
             parameters=' '.join([str(p) for p in args])
@@ -36,3 +39,11 @@ class Redirect:
 
     def __str__(self):
         return ''.join([self.type, self.dest])
+
+
+class Pipe:
+    def __init__(self, piped_cmd):
+        self.piped_cmd = '| ' + piped_cmd
+
+    def __str__(self):
+        return self.piped_cmd
