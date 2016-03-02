@@ -268,6 +268,7 @@ def run_pipeline(read_pairs, options):
 
     for delete_file in staging_delete:
         subprocess.call(['rm', delete_file])
+        # Commit
 
 
 
