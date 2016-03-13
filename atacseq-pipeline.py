@@ -124,7 +124,7 @@ def run_pipeline(read_pairs, options):
                 Parameter('{}.sai'.format(read2)),
                 Parameter(read1),
                 Parameter(read2),
-                Redirect(type='>', dest=os.path.join(logs_dir, 'bwa_sampe.log')),
+                Redirect(type='2>', dest=os.path.join(logs_dir, 'bwa_sampe.log')),
                 Pipe(
                     samtools_view.cmd(
                         Parameter('-hSb'),
@@ -265,6 +265,10 @@ def run_pipeline(read_pairs, options):
         # Get number of called peaks
         meta_data['num_peaks'] = subprocess.check_output(['wc', '-l',
                                                           '{}.peaks.bed'.format(lib_prefix)])
+
+        meta_data_file = open(os.path.join(logs_dir, 'meta.txt'), 'w')
+        print >>meta_data_file, meta_data
+        meta_data_file.close()
 
     for delete_file in staging_delete:
         subprocess.call(['rm', delete_file])

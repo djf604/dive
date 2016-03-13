@@ -5,6 +5,13 @@ import re
 from dive.components import Software, Parameter, Redirect, Pipe
 
 READ1 = 0
+FIRST_CHAR = 0
+
+
+def count_gzipped_lines(filepath):
+    zcat = subprocess.Popen(['zcat', filepath], stdout=subprocess.PIPE)
+    num_lines = subprocess.check_output(['wc', '-l'], stdin=zcat.stdout)
+    return num_lines.strip()
 
 
 def run_pipeline(read_pairs, options):
@@ -26,11 +33,17 @@ def run_pipeline(read_pairs, options):
     # Keep list of items to delete
     staging_delete= ['tmp']
     bwa_bam_outs = []
-    meta_data = {
-        'raw_counts': [],
-        'trimmed_counts': [],
-        'mapped_reads': [],
-        'num_peaks': '-1'
+    qc_data = {
+        'total_raw_reads_counts': [],
+        'trimmed_reads_counts': [],
+        # TODO Find a better way to store FastQC results
+        'num_reads_mapped': [],
+        'percent_duplicate_reads': '0',
+        'num_unique_reads_mapped': [],  # TODO This isn't implemented
+        'num_mtDNA_reads_mapped': [],  # TODO This isn't implemented
+        'num_reads_mapped_after_filtering': '0',  # TODO This isn't implemented
+        'num_peaks_called': '-1',
+        # TODO Get number of peaks in annotation sites
     }
 
     # Instantiate software instances
@@ -45,6 +58,8 @@ def run_pipeline(read_pairs, options):
     novosort = Software('novosort', config['novosort']['path'])
     picard_mark_dup = Software('Picard MarkDuplicates',
                                config['picard']['path'] + ' MarkDuplicates')
+    picard_insert_metrics = Software('Picard CollectInsertSizeMetrics',
+                                     config['picard']['path'] + ' CollectInsertSizeMetrics')
     bedtools_bamtobed = Software('bedtools bamtobed',
                         config['bedtools']['path'] + ' bamtobed')
     sortbed = Software('sortBed', config['sortBed']['path'])
@@ -60,9 +75,9 @@ def run_pipeline(read_pairs, options):
             read1, read2 = read_pair.split(':')
 
             # Get raw fastq read counts
-            meta_data['raw_counts'].append([
-                subprocess.check_output(['wc', '-l', read1]),
-                subprocess.check_output(['wc', '-l', read2])
+            qc_data['total_raw_reads_counts'].append([
+                str(int(count_gzipped_lines(read1))/4),
+                str(int(count_gzipped_lines(read2))/4)
             ])
 
             trimmed_read1_filename = os.path.join(output_dir,
@@ -84,9 +99,9 @@ def run_pipeline(read_pairs, options):
             )
 
             # Get trimmed fastq read counts
-            meta_data['trimmed_counts'].append([
-                subprocess.check_output(['wc', '-l', trimmed_read1_filename]),
-                subprocess.check_output(['wc', '-l', trimmed_read2_filename])
+            qc_data['trimmed_reads_counts'].append([
+                str(int(count_gzipped_lines(trimmed_read1_filename))/4),
+                str(int(count_gzipped_lines(trimmed_read2_filename))/4)
             ])
 
             staging_delete.extend([trimmed_read1_filename, trimmed_read2_filename])
@@ -144,17 +159,14 @@ def run_pipeline(read_pairs, options):
                 Redirect(type='>', dest=bwa_bam + '.flagstat')
             )
 
-            # Get number of mapped reads
-            # Calculate as trimmed_reads * flagstats_mapped_percentage
-            try:
-                flagstats_percent = (re.search(r'\d+ \+ \d+ mapped \((\d+\.\d+)%:.*?\)',
-                                               subprocess.check_output(['cat', bwa_bam + '.flagstat']))
-                                     .group(1))
-                meta_data['mapped_reads'].append(
-                    str(int(int(meta_data['trimmed_counts'][i][READ1]) * float(flagstats_percent)))
-                )
-            except:
-                pass
+            # Get number of mapped reads from this BAM
+            with open(bwa_bam + '.flagstat') as flagstats:
+                flagstats_contents = flagstats.read()
+                target_line = re.search(r'(\d+) \+ \d+ mapped', flagstats_contents)
+                if target_line is not None:
+                    qc_data['num_reads_mapped'].append(str(int(target_line.group(1))/2))
+                else:
+                    qc_data['num_reads_mapped'].append('0')
 
         novosort.run(
             Parameter('--threads', config['novosort']['threads']),
@@ -168,13 +180,35 @@ def run_pipeline(read_pairs, options):
         # TODO Do we still want to filter to only uniquely mapped reads?
 
         # This would be the combined uniquely mapped reads and unmapped reads
-        samtools_view.run(
-            Parameter('-b'),
-            Parameter('-F', '268'),
-            Parameter('-q', '10'),
-            Parameter('-o', '{}.unique.unmappedrm.bam'.format(lib_prefix)),
-            Parameter('{}.sortmerged.bam'.format(lib_prefix))
+        # samtools_view.run(
+        #     Parameter('-b'),
+        #     Parameter('-F', '268'),
+        #     Parameter('-q', '10'),
+        #     Parameter('-o', '{}.unique.unmappedrm.bam'.format(lib_prefix)),
+        #     Parameter('{}.sortmerged.bam'.format(lib_prefix))
+        # )
+
+        # Mark and remove duplicates
+        markduplicates_metrics_filepath = os.path.join(logs_dir,
+                                                       'mark_dup.metrics')
+        picard_mark_dup.run(
+            Parameter('INPUT={}.sortmerged.bam'.format(lib_prefix)),
+            Parameter('OUTPUT={}.duprm.bam'.format(lib_prefix)),
+            Parameter('TMP_DIR=tmp'),
+            Parameter('METRICS_FILE={}'.format(markduplicates_metrics_filepath)),
+            Parameter('REMOVE_DUPLICATES=true'),
+            Redirect(type='&>', dest=os.path.join(logs_dir, 'mark_dup.log'))
         )
+
+        # Get percent duplicates
+        with open(markduplicates_metrics_filepath) as markdup_metrics:
+            for line in markdup_metrics:
+                if line[FIRST_CHAR] == '#':
+                    continue
+                record = line.strip().split('\t')
+                if len(record) == 9:
+                    if re.match(r'\d+', record[7]) is not None:
+                        qc_data['percent_duplicate_reads'] = record[7]
 
         # Filter down to uniquely mapped reads
         samtools_view.run(
@@ -182,17 +216,7 @@ def run_pipeline(read_pairs, options):
             Parameter('-F', '256'),
             Parameter('-q', '10'),
             Parameter('-o', '{}.unique.bam'.format(lib_prefix)),
-            Parameter('{}.sortmerged.bam'.format(lib_prefix))
-        )
-
-        picard_mark_dup.run(
-            Parameter('INPUT={}.unique.bam'.format(lib_prefix)),
-            Parameter('OUTPUT={}.duprm.bam'.format(lib_prefix)),
-            Parameter('TMP_DIR=tmp'),
-            Parameter('METRICS_FILE={}'.format(os.path.join(logs_dir,
-                                                            'mark_dup.metrics'))),
-            Parameter('REMOVE_DUPLICATES=true'),
-            Redirect(type='&>', dest=os.path.join(logs_dir, 'mark_dup.log'))
+            Parameter('{}.duprm.bam'.format(lib_prefix))
         )
 
         # Remove unmapped reads
@@ -200,7 +224,7 @@ def run_pipeline(read_pairs, options):
             Parameter('-b'),
             Parameter('-F', '12'),
             Parameter('-o', '{}.unmappedrm.bam'.format(lib_prefix)),
-            Parameter('{}.duprm.bam'.format(lib_prefix))
+            Parameter('{}.unique.bam'.format(lib_prefix))
         )
 
         # Stage delete for temporary files
@@ -218,6 +242,12 @@ def run_pipeline(read_pairs, options):
             Parameter('-b', config['bedtools']['blacklist-bed']),
             Parameter('-f', '0.5'),
             Redirect(type='>', dest='{}.processed.bam'.format(lib_prefix))
+        )
+
+        picard_insert_metrics.run(
+            Parameter('INPUT={}.processed.bam'.format(lib_prefix)),
+            Parameter('OUTPUT={}'.format(os.path.join(logs_dir, lib_prefix + '.insert_size.metrics'))),
+            Parameter('HISTOGRAM_FILE={}'.format(os.path.join(logs_dir, lib_prefix + '.insert_size.pdf')))
         )
 
         bedtools_bamtobed.run(
@@ -263,8 +293,8 @@ def run_pipeline(read_pairs, options):
         )
 
         # Get number of called peaks
-        meta_data['num_peaks'] = subprocess.check_output(['wc', '-l',
-                                                          '{}.peaks.bed'.format(lib_prefix)])
+        # meta_data['num_peaks'] = subprocess.check_output(['wc', '-l',
+        #                                                   '{}.peaks.bed'.format(lib_prefix)])
 
     for delete_file in staging_delete:
         subprocess.call(['rm', delete_file])
