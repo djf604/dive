@@ -150,7 +150,7 @@ def run_pipeline(read_pairs, options):
             )
 
             bwa_bam_outs.append('{}.{}.bam'.format(lib_prefix, i))
-            staging_delete.append('{}.{}.bam'.format(lib_prefix, i))
+            # staging_delete.append('{}.{}.bam'.format(lib_prefix, i))
 
     if step <= 4:
         for i, bwa_bam in enumerate(bwa_bam_outs):
@@ -292,6 +292,8 @@ def run_pipeline(read_pairs, options):
             Redirect(type='>', dest='{}.peaks.bed'.format(lib_prefix))
         )
 
+        staging_delete.append('{}.unsorted.peaks.bed'.format(lib_prefix))
+
         with open(os.path.join(logs_dir, 'qc_metrics.txt'), 'w') as qc_data_file:
             qc_data_file.write(str(qc_data) + '\n')
 
@@ -300,7 +302,7 @@ def run_pipeline(read_pairs, options):
         #                                                   '{}.peaks.bed'.format(lib_prefix)])
 
     for delete_file in staging_delete:
-        subprocess.call(['rm', delete_file])
+        subprocess.call(['rm', '-rf', delete_file])
         # Commit
 
 
