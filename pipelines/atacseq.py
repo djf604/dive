@@ -292,6 +292,9 @@ def run_pipeline(read_pairs, options):
             Redirect(type='>', dest='{}.peaks.bed'.format(lib_prefix))
         )
 
+        with open(os.path.join(logs_dir, 'qc_metrics.txt'), 'w') as qc_data_file:
+            qc_data_file.write(str(qc_data) + '\n')
+
         # Get number of called peaks
         # meta_data['num_peaks'] = subprocess.check_output(['wc', '-l',
         #                                                   '{}.peaks.bed'.format(lib_prefix)])
