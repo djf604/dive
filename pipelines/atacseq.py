@@ -139,7 +139,7 @@ def run_pipeline(read_pairs, options):
                 Parameter('{}.sai'.format(read2)),
                 Parameter(read1),
                 Parameter(read2),
-                Redirect(type='>', dest=os.path.join(logs_dir, 'bwa_sampe.log')),
+                Redirect(type='2>', dest=os.path.join(logs_dir, 'bwa_sampe.log')),
                 Pipe(
                     samtools_view.cmd(
                         Parameter('-hSb'),
